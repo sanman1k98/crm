@@ -25,6 +25,7 @@ const User = defineTable({
 		username: column.text({ unique: true }),
 		password_hash: column.text(),
 		fullname: column.text(),
+		org: column.text({ optional: true }),
 	},
 });
 
