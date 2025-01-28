@@ -12,8 +12,8 @@ import { sha256 } from '@oslojs/crypto/sha2';
 import { encodeBase32LowerCaseNoPadding, encodeHexLowerCase } from '@oslojs/encoding';
 import { db, eq, Session, User } from 'astro:db';
 
-type TUser = typeof User.$inferSelect;
-type TSession = typeof Session.$inferSelect;
+export type TUser = Omit<typeof User.$inferSelect, 'password_hash'>;
+export type TSession = typeof Session.$inferSelect;
 
 export type SessionValidationResult =
 	| { session: TSession; user: TUser }
@@ -40,7 +40,15 @@ export async function createSession(token: string, userId: TUser['id']): Promise
 export async function validateSessionToken(token: string): Promise<SessionValidationResult> {
 	const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
 	const result = await db
-		.select({ user: User, session: Session })
+		.select({
+			user: {
+				id: User.id,
+				username: User.username,
+				fullname: User.fullname,
+				org: User.org,
+			},
+			session: Session,
+		})
 		.from(Session)
 		.innerJoin(User, eq(Session.userId, User.id))
 		.where(eq(Session.id, sessionId))
@@ -49,7 +57,7 @@ export async function validateSessionToken(token: string): Promise<SessionValida
 	if (!result)
 		return { session: null, user: null };
 
-	const { user, session } = result;
+	const { user, session } = result satisfies { user: TUser; session: TSession };
 
 	if (Date.now() >= session.expiresAt.getTime()) {
 		await db.delete(Session).where(eq(Session.id, session.id));
