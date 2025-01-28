@@ -50,6 +50,7 @@ const partialUserColumns: Omit<typeof User._.columns, 'password_hash'> = {
 	id: User.id,
 	username: User.username,
 	fullname: User.fullname,
+	org: User.org,
 };
 
 /**
@@ -75,6 +76,7 @@ export async function createUser(opts: UserInit): Promise<UserInfo> {
 			fullname: opts.fullname,
 			username: opts.username,
 			password_hash: passwordHash,
+			org: opts.org ?? null,
 		})
 		.returning(partialUserColumns)
 		.get();
